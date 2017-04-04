@@ -1,5 +1,5 @@
-#define CHILD_SIZE 1024
-#define MAX_VALUE 2000000000
+#define CHILD_SIZE 4
+#define MAX_VALUE 200000000
 #define KEY_TYPE int
 #define VALUE_TYPE void*
 
@@ -12,38 +12,52 @@
 int tempBloomFilter = 123;
 
 typedef struct _Node {
-	Node* parent;
+	void* parent;
 	void* child[CHILD_SIZE + 1];
-	KEY_TYPE key[CHILD_SIZE + 1];
+	KEY_TYPE key[CHILD_SIZE];
 	char isLeaf;
 } Node;
+
+
+typedef struct _Data {
+	int testN;
+} Data;
+
+Node* init(int max_size) {
+
+}
 
 Node* initNode() {
 	Node* retNode = (Node*)malloc(sizeof(Node));
 
-	memset(retNode->key, MAX_VALUE, sizeof(KEY_TYPE) * (CHILD_SIZE + 1));
+//	memset(retNode->key, MAX_VALUE, sizeof(KEY_TYPE) * CHILD_SIZE);
+	for (int i = 0; i < CHILD_SIZE; i++) {
+		retNode->key[i] = MAX_VALUE;
+	}
 	retNode->isLeaf = 0;
 
 	return retNode;
 }
 Node* initLeafNode() {
 	Node* retNode = (Node*)malloc(sizeof(Node));
-
-	memset(retNode->key, MAX_VALUE, sizeof(KEY_TYPE) * (CHILD_SIZE + 1));
+	
+	//memset(&retNode->key[0], MAX_VALUE, sizeof(KEY_TYPE) * (CHILD_SIZE));
+	for (int i = 0; i < CHILD_SIZE; i++) {
+		retNode->key[i] = MAX_VALUE;
+	}
 	retNode->isLeaf = 1;
 
 	return retNode;
 }
 
-Node* root;
 KEY_TYPE InsertTempKey[CHILD_SIZE];
 void* InsertTempValue[CHILD_SIZE];
 
-void Insert(KEY_TYPE inputKey, VALUE_TYPE inputValue) {
+void Insert(Node* root, KEY_TYPE inputKey, void* inputValue) {
 	Node* current = root;
 	char insertComplete = 0;
 	char doingSpilt = 0;
-	while (insertComplete != 0) {	//Find LeafNode
+	while (insertComplete == 0) {
 		for (int i = 0; i < CHILD_SIZE; i++) {
 			if (current->key[i] >= inputKey) {
 				if(!(current->isLeaf) && !doingSpilt)	//Not LeafNode
@@ -51,18 +65,18 @@ void Insert(KEY_TYPE inputKey, VALUE_TYPE inputValue) {
 					current = ((Node**)current->child)[i];
 				}
 				else {								//LeafNode
-					//Move Back Key
-					memcpy(InsertTempKey, &(current->key[i]), sizeof(KEY_TYPE) * (CHILD_SIZE - i + 1));
-					memcpy(&(current->key[i + 1]), InsertTempKey, sizeof(KEY_TYPE) * (CHILD_SIZE - i + 1));
+					//Move Back Key & Child
+					memcpy(InsertTempKey, &(current->key[i]), sizeof(KEY_TYPE) * (CHILD_SIZE - i - 1));
+					memcpy(InsertTempValue, &((Node**)current->child)[i], sizeof(void*) * (CHILD_SIZE - i - 1));
+					if (i + 1 < CHILD_SIZE) {
+						memcpy(&(current->key[i + 1]), InsertTempKey, sizeof(KEY_TYPE) * (CHILD_SIZE - i - 1));
+						memcpy(&((Node**)current->child)[i + 1], InsertTempValue, sizeof(void*) * (CHILD_SIZE - i - 1));
+					}
 					current->key[i] = inputKey;
-
-					//Move Back Child
-					memcpy(InsertTempValue, &((Node**)current->child)[i], sizeof(VALUE_TYPE) * (CHILD_SIZE - i + 1));
-					memcpy(&((Node**)current->child)[i + 1], InsertTempValue, sizeof(VALUE_TYPE) * (CHILD_SIZE - i + 1));
 					current->child[i] = inputValue;
 					
 					//Spilt Check
-					if (current->key[CHILD_SIZE] != MAX_VALUE) {
+					if (current->key[CHILD_SIZE - 1] != MAX_VALUE) {
 						doingSpilt = 1;
 
 						if (current->isLeaf) {		
@@ -78,6 +92,7 @@ void Insert(KEY_TYPE inputKey, VALUE_TYPE inputValue) {
 							int howManyCopy = CHILD_SIZE - CHILD_SIZE / 2;
 							memcpy(((Node*)inputValue)->child, &current->child[copyStart], sizeof(void*) * howManyCopy);
 							memcpy(((Node*)inputValue)->key, &current->key[copyStart], sizeof(KEY_TYPE) * howManyCopy);
+							memset(&current->child[copyStart], MAX_VALUE, sizeof(KEY_TYPE) * howManyCopy);
 						}
 						else {
 							//create Node
@@ -85,14 +100,28 @@ void Insert(KEY_TYPE inputKey, VALUE_TYPE inputValue) {
 
 							//copy to inputValue
 							int copyStart = CHILD_SIZE / 2 + 1;
-							int valueHowManyCopy = CHILD_SIZE - CHILD_SIZE / 2;
-							int keyHowManyCopy = valueHowManyCopy - 1;
+							int keyHowManyCopy = CHILD_SIZE - CHILD_SIZE / 2;
+							int valueHowManyCopy = keyHowManyCopy + 1;
 							memcpy(((Node*)inputValue)->child, &current->child[copyStart], sizeof(void*) * valueHowManyCopy);
 							memcpy(((Node*)inputValue)->key, &current->key[copyStart], sizeof(KEY_TYPE) * keyHowManyCopy);
+							memset(&current->child[copyStart], MAX_VALUE, sizeof(KEY_TYPE) * keyHowManyCopy);
+
+							//set child's parent
+							int c = 0;
+							while (((Node*)inputValue)->key[c] != MAX_VALUE) {
+								((Node*)((Node*)inputValue)->child[c++])->parent = ((Node*)inputValue);
+							}
 						}
 						
 						inputKey = current->key[CHILD_SIZE / 2];
-						current = current->parent;
+						
+						//root expension
+						if (current->parent == NULL) {
+
+						fefefe]
+						else {
+									
+						}
 					}
 					else {
 						insertComplete = 1;
@@ -113,7 +142,48 @@ void Search() {
 
 }
 
-int main() {
-	root = initNode();
+//FOR DEBUG
+void print(Node* root) {
+	if (root->isLeaf) {
+		printf("Leaf Node\n");
+	}
+	else {
+		printf("Directory Node\n");
+	}
 
+	for (int i = 0; i < CHILD_SIZE - 1; i++) {
+		if (root->key[i] == MAX_VALUE) {
+			printf("M ");
+		}else {
+			printf("%d ", root->key[i]);
+		}
+	}
+	printf("\n");
+
+	if (root->isLeaf) {
+		return;
+	}
+	for (int i = 0; i < CHILD_SIZE - 1; i++) {
+		if (root->key[i] == MAX_VALUE) {
+			return;
+		}
+		else {
+			print((Node*)root->child[i]);
+		}
+	}
+}
+
+int main() {
+	Node* root = initLeafNode();
+	root->parent = NULL;
+
+	for (int i = 0; i < 4; i++) {
+		Data* d = (Data*)malloc(sizeof(Data));
+		d->testN = i;
+
+		Insert(root, i + 1, d);
+	}
+
+
+	print(root);
 }
