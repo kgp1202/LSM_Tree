@@ -163,6 +163,11 @@ void Insert(Node* root2, KEY_TYPE inputKey, void* inputValue) {
 
 
 int Delete(Node* root2, KEY_TYPE deletedKey) {
+	if (deletedKey == 233) {
+		printf("SS\n");
+	}
+
+
 	Node* current = root;
 	char doingDirectoryDelete = 0;
 	char isDistribute = 0;
@@ -242,14 +247,17 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 
 			//Find leftChild
 			Node* leftChild = NULL;
+			KEY_TYPE parentKey;
 			if (current->parent != NULL) {
 				Node* tempParent = current->parent;
 				int k = 0;
 				while (tempParent->key[k] <= deletedKey) {
 					k++;
 				}
-				if(k - 1 >= 0)
+				if (k - 1 >= 0) {
 					leftChild = tempParent->child[k - 1];
+					parentKey = tempParent->key[k - 1];
+				}
 			}
 			else {	//current is root
 				//get root's child size
@@ -260,10 +268,14 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 
 				//change root to child[0]
 				if (rootSize == 0) {
-					Node* temp = root;
-					root = current->child[0];
-					root->parent = NULL;
-					free(temp);
+					if (root->isLeaf) {
+						return 1;
+					}
+					else {
+						Node* temp = root;
+						root = current->child[0];
+						root->parent = NULL;
+						free(temp);					}
 				}
 
 				return 1;
@@ -275,6 +287,7 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 				//Merge current, rightChild
 				left = current;
 				right = ((Node*)current->parent)->child[1];
+				parentKey = ((Node*)left->parent)->key[0];
 			}
 			else {
 				//Merge leftChild, current
@@ -296,64 +309,98 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 			if (left->isLeaf) {
 				memcpy(tempKeyArr, left->key, sizeof(KEY_TYPE) * leftSize);
 				memcpy(&tempKeyArr[leftSize], right->key, sizeof(KEY_TYPE) * rightSize);		
-				memcpy(tempValueArr, left->child, sizeof(void*) * rightSize);
+				memcpy(tempValueArr, left->child, sizeof(void*) * leftSize);
 				memcpy(&tempValueArr[leftSize], right->child, sizeof(void*) * rightSize);
 			}
 			else {
 				memcpy(tempKeyArr, left->key, sizeof(KEY_TYPE) * leftSize);
-				memcpy(&tempKeyArr[leftSize], ((Node*)right->parent)->key, sizeof(KEY_TYPE));
+				memcpy(&tempKeyArr[leftSize], &parentKey, sizeof(KEY_TYPE));
+				//memcpy(&tempKeyArr[leftSize], ((Node*)right->parent)->key, sizeof(KEY_TYPE));
 				memcpy(&tempKeyArr[leftSize + 1], right->key, sizeof(KEY_TYPE) * rightSize);
 				memcpy(tempValueArr, left->child, sizeof(void*) * (leftSize + 1));
-				memcpy(&tempValueArr[leftSize + 1], right->child, sizeof(void*) * rightSize);
+				memcpy(&tempValueArr[leftSize + 1], right->child, sizeof(void*) * (rightSize + 1));
 			}
 
 			//Check isDistribute
 			if (tempKeyArr[CHILD_SIZE - 1] == 0) {
-				//copy tempValue & tempKey to left value & key
-				memcpy(left->key, tempKeyArr, sizeof(KEY_TYPE) * (CHILD_SIZE - 1));
-				memcpy(left->child, tempValueArr, sizeof(void*) * (CHILD_SIZE - 1));
-				
-				current = left;
-
 				if (left->isLeaf) {
-					left->child[CHILD_SIZE] = right->child[CHILD_SIZE];
-					deletedKey = right->key[0];
-				}
+					//copy tempValue & tempKey to left value & key
+					memcpy(&left->key[leftSize], &tempKeyArr[leftSize], sizeof(KEY_TYPE) * rightSize);
+					memcpy(&left->child[leftSize], &tempValueArr[leftSize], sizeof(void*) * rightSize);
 
+					left->child[CHILD_SIZE] = right->child[CHILD_SIZE];
+				}
+				else {
+					//copy tempValue & tempKey to left value & key
+					memcpy(&left->key[leftSize], &tempKeyArr[leftSize], sizeof(KEY_TYPE) * (rightSize + 1));
+					memcpy(&left->child[leftSize + 1], &tempValueArr[leftSize + 1], sizeof(void*) * (rightSize + 1));
+
+					//set Parent
+					for (int k = leftSize; k < CHILD_SIZE; k++) {
+						if (left->key[k] == MAX_VALUE)
+							break;
+
+						((Node*)left->child[k])->parent = left;
+					}
+				}
+				if(right->key[0] != MAX_VALUE)
+					deletedKey = right->key[0];
+
+				current = left;
 				free(right);
 			}
 			else {
 				isDistribute = 1;
-				deletedKey = right->key[0];
 
 				//copy left and right
 				//각각의 size를 가지고 있다면 쉽게 변경 가능@@@@@@@
-				for (int i = 0; i < CHILD_SIZE; i++) {
-					left->key[i] = MAX_VALUE;
-					right->key[i] = MAX_VALUE;
+				for (int j = 0; j < CHILD_SIZE; j++) {
+					left->key[j] = MAX_VALUE;
+					right->key[j] = MAX_VALUE;
 				}
-				int howManyCopy = (leftSize + rightSize) / 2;
 				if (left->isLeaf) {	
+					int howManyCopy = (leftSize + rightSize) / 2;
+
 					//copy tempValue & tempKey to left
 					memcpy(left->key, tempKeyArr, sizeof(KEY_TYPE) * howManyCopy);
 					memcpy(left->child, tempValueArr, sizeof(void*) * howManyCopy);
 
 					//copy tempValue & tempKey to right
 					memcpy(right->key, &tempKeyArr[howManyCopy], sizeof(KEY_TYPE) * ((leftSize + rightSize) - howManyCopy));
-					memcpy(right->child, &tempValueArr[howManyCopy], sizeof(KEY_TYPE) * ((leftSize + rightSize) - howManyCopy));
+					memcpy(right->child, &tempValueArr[howManyCopy], sizeof(void*) * ((leftSize + rightSize) - howManyCopy));
 
 					isDistributeChangedKey = right->key[0];
 				}
 				else {
-					//copy tempValue & tempKey to left
+					int howManyCopy = (leftSize + rightSize + 1) / 2;
+
+					//copy tempValue & tempKey to left 
 					memcpy(left->key, tempKeyArr, sizeof(KEY_TYPE) * howManyCopy);
 					memcpy(left->child, tempValueArr, sizeof(void*) * (howManyCopy + 1));
 
 					isDistributeChangedKey = tempKeyArr[howManyCopy];
 
 					//copy tempValue & tempKey to right
-					memcpy(right->key, &tempKeyArr[howManyCopy + 1], sizeof(KEY_TYPE) * ((leftSize + rightSize) - howManyCopy - 1));
-					memcpy(right->child, &tempValueArr[howManyCopy + 1], sizeof(KEY_TYPE) * ((leftSize + rightSize) - (howManyCopy + 1)));
+					memcpy(right->key, &tempKeyArr[howManyCopy + 1], sizeof(KEY_TYPE) * ((leftSize + rightSize + 1) - howManyCopy - 1));
+					memcpy(right->child, &tempValueArr[howManyCopy + 1], sizeof(void*) * ((leftSize + rightSize + 1) - howManyCopy));
+
+					//set parent
+					for (int k = 0; k < CHILD_SIZE; k++) {
+						if (left->key[k] == MAX_VALUE)
+							break;
+
+						((Node*)left->child[k])->parent = left;
+					}
+					for (int k = 0; k < CHILD_SIZE; k++) {
+						if (right->key[k] == MAX_VALUE)
+							break;
+
+						((Node*)right->child[k])->parent = right;
+					}
+				}
+
+				if (deletedKey < right->key[0] && right->key[0] != MAX_VALUE) {
+					deletedKey = right->key[0];
 				}
 			}
 
@@ -374,10 +421,40 @@ Data* Search(Node* root, KEY_TYPE inputKey) {
 void print(Node* root) {
 	if (root->isLeaf) {
 		printf("Leaf Node\n");
-		//printf("parent is %d\n", ((Node*)root->parent)->key[0]);
 	}
 	else {
 		printf("Directory Node\n");
+
+		for (int i = 0; i < CHILD_SIZE; i++) {
+			if (root->key[i] == MAX_VALUE)
+				break;
+
+			if (root != ((Node*)root->child[i])->parent) {
+				printf("FUCK!!@@@@@@@@@@@@@@@@@@\n");
+				printf("FUCK!!@@@@@@@@@@@@@@@@@@\n");
+				while (1) {
+
+				}
+
+			}
+
+			for (int j = 0; j < CHILD_SIZE; j++) {
+				if (((Node*)root->child[i])->key[j] == MAX_VALUE)
+					break;
+
+				if (root->key[i] <= ((Node*)root->child[i])->key[j] && ((Node*)root->child[i])->isLeaf) {
+					printf("FUCK!!@@@@@@@@@@@@@@@@@@\n");
+					while (1) {
+
+					}
+				}
+			}
+		}
+
+
+	}
+	if (root->parent != NULL) {
+		//printf("parent is %d\n", ((Node*)root->parent)->key[0]);
 	}
 
 	for (int i = 0; i < CHILD_SIZE - 1; i++) {
@@ -388,6 +465,15 @@ void print(Node* root) {
 		}
 	}
 	printf("\n");
+	for (int i = 0; i < CHILD_SIZE - 1; i++) {
+		if (root->key[i] == MAX_VALUE) {
+			//printf("M ");
+		}
+		else {
+			//printf("%d ", ((Data*)root->child[i])->testN);
+		}
+	}
+	//printf("\n");
 
 	if (root->isLeaf) {
 		return;
@@ -407,6 +493,54 @@ int main() {
 	root = initLeafNode();
 	root->parent = NULL;
 
+	char isPrint = 1;
+	//300
+	int max = 300;
+	int insertedArr[1000];
+	memset(insertedArr, 0, sizeof(insertedArr));
+	for (int i = 0; i < max; i++) {
+		int key = rand() % max;
+
+		if (insertedArr[key] > 0 || key == 0)
+			continue;
+
+		insertedArr[key]++;
+
+		Data* d = (Data*)malloc(sizeof(Data));
+		d->testN = key;
+
+		if(isPrint)
+			printf("insert %d\n", key);
+
+		Insert(root, key, d);
+		
+		if (isPrint) {
+			print(root);
+			printf("=========================================\n");
+		}
+	}
+
+	rand();
+	for (int i = 0; i < max; i++) {
+		int key = rand() % max;
+
+		if (key == 0)
+			continue;
+
+		if (isPrint)
+			printf("delete %d\n", key);
+
+		Delete(root, key);
+
+		if (isPrint) {
+		print(root);
+		printf("=========================================\n");
+		}
+	}
+
+	print(root);
+
+	/*
 	int insertedArr[] = { 1, 2, 3, 4, 5, 6, 7, 12, 13, 14 };
 	for (int i = 0; i < 20; i++) {
 		char temp = 0;
@@ -417,7 +551,6 @@ int main() {
 		}
 		if (!temp)	continue;
 
-
 		Data* d = (Data*)malloc(sizeof(Data));
 		d->testN = i;
 
@@ -425,6 +558,11 @@ int main() {
 	}
 
 	Delete(root, 7);
+	Data* d = (Data*)malloc(sizeof(Data));
+	d->testN = 17;
+	Insert(root, 17, d);
+	Delete(root, 2);
+
 
 	print(root);
 	printf("=========================================\n");
@@ -454,5 +592,5 @@ int main() {
 		print(root);
 		printf("=========================================\n");
 	}
-	
+	*/
 }

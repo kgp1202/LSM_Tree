@@ -1,6 +1,4 @@
 ﻿  소스.c
-c:\users\kim\documents\dev\visual_studio\b+_tree\consoleapplication1\consoleapplication1\소스.c(436): warning C4996: 'scanf': This function or variable may be unsafe. Consider using scanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdio.h(1270): note: 'scanf' 선언을 참조하십시오.
 c:\users\kim\documents\dev\visual_studio\b+_tree\consoleapplication1\consoleapplication1\소스.c(29): warning C4716: 'init': 값을 반환해야 합니다.
-c:\users\kim\documents\dev\visual_studio\b+_tree\consoleapplication1\consoleapplication1\소스.c(371): warning C4716: 'Search': 값을 반환해야 합니다.
+c:\users\kim\documents\dev\visual_studio\b+_tree\consoleapplication1\consoleapplication1\소스.c(418): warning C4716: 'Search': 값을 반환해야 합니다.
   ConsoleApplication1.vcxproj -> C:\Users\Kim\Documents\dev\Visual_Studio\B+_Tree\ConsoleApplication1\Debug\ConsoleApplication1.exe
