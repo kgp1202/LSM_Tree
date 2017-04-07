@@ -201,7 +201,7 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 					else {
 						if (!isDistribute) {
 							//Directory Data »èÁ¦.
-							int howManyCopy = CHILD_SIZE - i - 1;
+							int howManyCopy = CHILD_SIZE - i;
 							if (howManyCopy > 0) {
 								//move key
 								memcpy(tempKeyArr, &current->key[i], sizeof(KEY_TYPE) * howManyCopy);
@@ -318,8 +318,6 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 				if (left->isLeaf) {
 					left->child[CHILD_SIZE] = right->child[CHILD_SIZE];
 					deletedKey = right->key[0];
-				}else{
-					deletedKey = right->key[0];
 				}
 
 				free(right);
@@ -409,7 +407,7 @@ int main() {
 	root = initLeafNode();
 	root->parent = NULL;
 
-	int insertedArr[] = { 1, 2, 3, 5, 6, 7, 8, 9, 10,11, 12,13, 14 };
+	int insertedArr[] = { 1, 2, 3, 4, 5, 6, 7, 12, 13, 14 };
 	for (int i = 0; i < 20; i++) {
 		char temp = 0;
 		for (int j = 0; j < sizeof(insertedArr) / sizeof(int); j++) {
@@ -426,10 +424,10 @@ int main() {
 		Insert(root, i, d);
 	}
 
-	Delete(root, 6);
-	Delete(root, 1);
+	Delete(root, 7);
 
 	print(root);
+	printf("=========================================\n");
 
 	while (1) {
 		int key;
