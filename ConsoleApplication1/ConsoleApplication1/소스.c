@@ -16,6 +16,7 @@ typedef struct _Node {
 	void* child[CHILD_SIZE + 1];
 	KEY_TYPE key[CHILD_SIZE];
 	char isLeaf;
+	int childSize;
 } Node;
 
 
@@ -35,6 +36,7 @@ Node* initNode() {
 	}
 	retNode->isLeaf = 0;
 	retNode->parent = NULL;
+	retNode->childSize = 0;
 
 	return retNode;
 }
@@ -46,6 +48,7 @@ Node* initLeafNode() {
 	}
 	retNode->isLeaf = 1;
 	retNode->parent = NULL;
+	retNode->childSize = 0;
 
 	return retNode;
 }
@@ -196,10 +199,17 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 						}
 					}
 					else {
-						//삭제하고 나서 데이터를 당길 필요가 있음@@@@@@@@@@@@@@@@@@
 						if (!isDistribute) {
 							//Directory Data 삭제.
-							current->key[i - 1] = MAX_VALUE;
+							int howManyCopy = CHILD_SIZE - i - 1;
+							if (howManyCopy > 0) {
+								//move key
+								memcpy(tempKeyArr, &current->key[i], sizeof(KEY_TYPE) * howManyCopy);
+								memcpy(&current->key[i - 1], tempKeyArr, sizeof(KEY_TYPE) * howManyCopy);
+								//move data
+								memcpy(tempValueArr, &current->child[i + 1], sizeof(void*) * howManyCopy);
+								memcpy(&current->child[i], tempValueArr, sizeof(void*) * howManyCopy);
+							}
 						}
 						else {
 							//Directory Data 변경.			
@@ -235,10 +245,11 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 			if (current->parent != NULL) {
 				Node* tempParent = current->parent;
 				int k = 0;
-				while (tempParent->key[k] <= current->key[0]) {
+				while (tempParent->key[k] <= deletedKey) {
 					k++;
 				}
-				leftChild = tempParent->child[k - 1];
+				if(k - 1 >= 0)
+					leftChild = tempParent->child[k - 1];
 			}
 			else {	//current is root
 				//get root's child size
@@ -290,7 +301,7 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 			}
 			else {
 				memcpy(tempKeyArr, left->key, sizeof(KEY_TYPE) * leftSize);
-				memcpy(&tempKeyArr[leftSize], ((Node*)right->parent)->child, sizeof(KEY_TYPE));
+				memcpy(&tempKeyArr[leftSize], ((Node*)right->parent)->key, sizeof(KEY_TYPE));
 				memcpy(&tempKeyArr[leftSize + 1], right->key, sizeof(KEY_TYPE) * rightSize);
 				memcpy(tempValueArr, left->child, sizeof(void*) * (leftSize + 1));
 				memcpy(&tempValueArr[leftSize + 1], right->child, sizeof(void*) * rightSize);
@@ -308,7 +319,7 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 					left->child[CHILD_SIZE] = right->child[CHILD_SIZE];
 					deletedKey = right->key[0];
 				}else{
-					deletedKey = ((Node*)right->parent)->key[0];
+					deletedKey = right->key[0];
 				}
 
 				free(right);
@@ -398,12 +409,25 @@ int main() {
 	root = initLeafNode();
 	root->parent = NULL;
 
-	for (int i = 1; i < 5; i++) {
+	int insertedArr[] = { 1, 2, 3, 5, 6, 7, 8, 9, 10,11, 12,13, 14 };
+	for (int i = 0; i < 20; i++) {
+		char temp = 0;
+		for (int j = 0; j < sizeof(insertedArr) / sizeof(int); j++) {
+			if (i == insertedArr[j]) {
+				temp = 1;
+			}
+		}
+		if (!temp)	continue;
+
+
 		Data* d = (Data*)malloc(sizeof(Data));
 		d->testN = i;
 
 		Insert(root, i, d);
 	}
+
+	Delete(root, 6);
+	Delete(root, 1);
 
 	print(root);
 
@@ -430,6 +454,7 @@ int main() {
 		}
 
 		print(root);
+		printf("=========================================\n");
 	}
 	
 }
