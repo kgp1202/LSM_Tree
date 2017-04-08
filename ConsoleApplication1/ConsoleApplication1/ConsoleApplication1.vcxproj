@@ -19,7 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="소스.c" />
+    <ClCompile Include="bptree.c" />
+    <ClCompile Include="main.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="bptree.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{71F7BD62-6A22-4827-B37F-ACC0392805F4}</ProjectGuid>
