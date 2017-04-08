@@ -9,14 +9,11 @@
 //FOR DEBUG
 #include <stdio.h>
 
-int tempBloomFilter = 123;
-
 typedef struct _Node {
 	void* parent;
 	void* child[CHILD_SIZE + 1];
 	KEY_TYPE key[CHILD_SIZE];
 	char isLeaf;
-	int childSize;
 } Node;
 
 
@@ -36,7 +33,6 @@ Node* initNode() {
 	}
 	retNode->isLeaf = 0;
 	retNode->parent = NULL;
-	retNode->childSize = 0;
 
 	return retNode;
 }
@@ -48,8 +44,7 @@ Node* initLeafNode() {
 	}
 	retNode->isLeaf = 1;
 	retNode->parent = NULL;
-	retNode->childSize = 0;
-
+	
 	return retNode;
 }
 
@@ -96,7 +91,6 @@ void Insert(Node* root2, KEY_TYPE inputKey, void* inputValue) {
 
 						((Node*)inputValue)->parent = current;
 					}
-					
 					
 					//Spilt Check
 					if (current->key[CHILD_SIZE - 1] != MAX_VALUE) {
@@ -163,11 +157,6 @@ void Insert(Node* root2, KEY_TYPE inputKey, void* inputValue) {
 
 
 int Delete(Node* root2, KEY_TYPE deletedKey) {
-	if (deletedKey == 233) {
-		printf("SS\n");
-	}
-
-
 	Node* current = root;
 	char doingDirectoryDelete = 0;
 	char isDistribute = 0;
@@ -315,7 +304,6 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 			else {
 				memcpy(tempKeyArr, left->key, sizeof(KEY_TYPE) * leftSize);
 				memcpy(&tempKeyArr[leftSize], &parentKey, sizeof(KEY_TYPE));
-				//memcpy(&tempKeyArr[leftSize], ((Node*)right->parent)->key, sizeof(KEY_TYPE));
 				memcpy(&tempKeyArr[leftSize + 1], right->key, sizeof(KEY_TYPE) * rightSize);
 				memcpy(tempValueArr, left->child, sizeof(void*) * (leftSize + 1));
 				memcpy(&tempValueArr[leftSize + 1], right->child, sizeof(void*) * (rightSize + 1));
@@ -337,10 +325,10 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 
 					//set Parent
 					for (int k = leftSize; k < CHILD_SIZE; k++) {
+						((Node*)left->child[k])->parent = left;
+
 						if (left->key[k] == MAX_VALUE)
 							break;
-
-						((Node*)left->child[k])->parent = left;
 					}
 				}
 				if(right->key[0] != MAX_VALUE)
@@ -386,16 +374,16 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 
 					//set parent
 					for (int k = 0; k < CHILD_SIZE; k++) {
+						((Node*)left->child[k])->parent = left;
+
 						if (left->key[k] == MAX_VALUE)
 							break;
-
-						((Node*)left->child[k])->parent = left;
 					}
 					for (int k = 0; k < CHILD_SIZE; k++) {
+						((Node*)right->child[k])->parent = right;
+
 						if (right->key[k] == MAX_VALUE)
 							break;
-
-						((Node*)right->child[k])->parent = right;
 					}
 				}
 
@@ -407,14 +395,33 @@ int Delete(Node* root2, KEY_TYPE deletedKey) {
 			current = current->parent;
 			continue;
 		}
-		return 0;
+		return 1;
 	}
-
 	return 0;
 }
 
-Data* Search(Node* root, KEY_TYPE inputKey) {
+Data* Search(Node* root2, KEY_TYPE searchKey) {
+	Node* current = root;
+	while (1) {
+		for (int i = 0; i < CHILD_SIZE; i++) {
+			if (current->key[i] > searchKey || (current->key[i] >= searchKey && current->isLeaf)) {
+				if (!current->isLeaf) {
+					current = current->child[i];
+					break;
+				}
+				else {
+					if (current->key[i] == searchKey) {
+						return current->child[i];
+					}
+					else {
+						return NULL;
+					}
+				}
+			}
+		}
+	}
 
+	return NULL;
 }
 
 //FOR DEBUG
@@ -426,8 +433,18 @@ void print(Node* root) {
 		printf("Directory Node\n");
 
 		for (int i = 0; i < CHILD_SIZE; i++) {
-			if (root->key[i] == MAX_VALUE)
+			if (root->key[i] == MAX_VALUE) {
+				if (root != ((Node*)root->child[i])->parent) {
+					printf("FUCK!!@@@@@@@@@@@@@@@@@@\n");
+					printf("FUCK!!@@@@@@@@@@@@@@@@@@\n");
+					while (1) {
+
+					}
+
+				}
 				break;
+			}
+				
 
 			if (root != ((Node*)root->child[i])->parent) {
 				printf("FUCK!!@@@@@@@@@@@@@@@@@@\n");
@@ -454,7 +471,7 @@ void print(Node* root) {
 
 	}
 	if (root->parent != NULL) {
-		//printf("parent is %d\n", ((Node*)root->parent)->key[0]);
+		printf("parent is %d\n", ((Node*)root->parent)->key[0]);
 	}
 
 	for (int i = 0; i < CHILD_SIZE - 1; i++) {
@@ -494,7 +511,6 @@ int main() {
 	root->parent = NULL;
 
 	char isPrint = 1;
-	//300
 	int max = 300;
 	int insertedArr[1000];
 	memset(insertedArr, 0, sizeof(insertedArr));
@@ -527,6 +543,10 @@ int main() {
 		if (key == 0)
 			continue;
 
+		if (insertedArr[key] > 0 || key == 0) {
+			insertedArr[key]--;
+		}
+
 		if (isPrint)
 			printf("delete %d\n", key);
 
@@ -535,6 +555,44 @@ int main() {
 		if (isPrint) {
 		print(root);
 		printf("=========================================\n");
+		}
+	}
+
+	for (int i = 0; i < max; i++) {
+		int key = rand() % max;
+
+		if (key == 0)
+			continue;
+
+		if (isPrint)
+			printf("search %d\n", key);
+
+		Data* temp = Search(root, key);
+
+		if (temp == NULL) {
+			printf("No\n");
+
+			if (insertedArr[key] > 0) {
+				printf("FFFFFFUUUUUCCCCKKK@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+				while (1) {
+
+				}
+			}
+		}
+		else {
+			printf("%d\n", temp->testN);
+
+			if (insertedArr[key] <= 0) {
+				printf("FFFFFFUUUUUCCCCKKK@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+				while (1) {
+
+				}
+			}
+		}
+
+		if (isPrint) {
+			print(root);
+			printf("=========================================\n");
 		}
 	}
 
@@ -566,6 +624,7 @@ int main() {
 
 	print(root);
 	printf("=========================================\n");
+	*/
 
 	while (1) {
 		int key;
@@ -588,9 +647,16 @@ int main() {
 		}else if(input == 'd'){
 			Delete(root, key);
 		}
+		else if (input == 's') {
+			Data* temp = Search(root, key);
+			if (temp == NULL) {
+				printf("No\n");
+			}else 
+				printf("%d\n", temp->testN);
+		}
 
 		print(root);
 		printf("=========================================\n");
 	}
-	*/
+	
 }
